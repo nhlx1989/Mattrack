@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>LabTrack</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300..800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/pikaday/css/pikaday.css">
+  <script src="https://cdn.jsdelivr.net/npm/pikaday/pikaday.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+  <style>
+    :root { --bg:#f7f6f2; --surface:#ffffff; --surface2:#f2efe9; --text:#26231d; --muted:#6f6a61; --border:#ddd6c9; --primary:#01696f; --primary2:#0a4f54; --success:#3f7a22; --warn:#a85a16; --danger:#a12c7b; --shadow:0 8px 30px rgba(34,30,22,.08); --radius:16px; }
+    [data-theme="dark"] { --bg:#171614; --surface:#1c1b19; --surface2:#252421; --text:#e7e3db; --muted:#a4a095; --border:#34312c; --primary:#4f98a3; --primary2:#2d7e89; --shadow:0 8px 30px rgba(0,0,0,.35); }
+    * { box-sizing:border-box; }
+    html, body { height:100%; margin:0; }
+    body { font-family:Inter, system-ui, sans-serif; background:var(--bg); color:var(--text); display:grid; grid-template-columns:1fr; grid-template-rows:auto auto auto 1fr; }
+    button, input, textarea, select { font:inherit; }
+    button { cursor:pointer; }
+    .topbar { grid-column:1/-1; display:flex; align-items:center; justify-content:space-between; padding:14px 18px; background:var(--surface); border-bottom:1px solid var(--border); position:sticky; top:0; z-index:30; }
+    .brand { display:flex; align-items:center; gap:12px; font-weight:800; letter-spacing:.02em; }
+    .brand-mark { width:34px; height:34px; border-radius:12px; background:linear-gradient(135deg,var(--primary),#0f8d98); box-shadow:var(--shadow); }
+    .top-actions { display:flex; gap:10px; align-items:center; }
+    .pill { padding:8px 12px; border-radius:999px; border:1px solid var(--border); background:var(--surface2); color:var(--muted); font-size:13px; }
+    .gridbar { grid-column:1/-1; display:flex; align-items:center; gap:10px; padding:8px 18px; background:var(--surface2); border-bottom:1px solid var(--border); font-size:12px; color:var(--muted); }
+    .gridbar strong { color:var(--primary); }
+    .tabbar { grid-column:1/-1; display:flex; gap:8px; padding:10px 18px; background:var(--surface); border-bottom:1px solid var(--border); position:sticky; top:74px; z-index:20; overflow:auto; }
+    .tab { border:1px solid var(--border); background:var(--surface2); color:var(--text); padding:10px 14px; border-radius:999px; font-weight:700; white-space:nowrap; }
+    .tab:hover { background:rgba(1,105,111,.10); }
+    .tab.active { background:var(--primary); color:white; border-color:var(--primary); }
+    .main { grid-row:4; overflow:auto; padding:22px; }
+    .page { display:none; max-width:1400px; }
+    .page.active { display:block; }
+    .hero { display:flex; align-items:flex-start; justify-content:space-between; gap:18px; margin-bottom:18px; }
+    .title { font-size:38px; margin:0; line-height:1.05; letter-spacing:-.04em; }
+    .subtitle { margin:8px 0 0; color:var(--muted); max-width:70ch; }
+    .cards { display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:14px; margin:18px 0 22px; }
+    .card { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:16px; box-shadow:var(--shadow); }
+    .card h3 { margin:0 0 8px; font-size:14px; color:var(--muted); font-weight:700; text-transform:uppercase; letter-spacing:.06em; }
+    .metric { font-size:34px; font-weight:800; letter-spacing:-.03em; }
+    .metric.small { font-size:20px; }
+    .muted { color:var(--muted); }
+    .section { margin-top:22px; }
+    .section h2 { margin:0 0 12px; font-size:18px; }
+    .panel { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:16px; box-shadow:var(--shadow); }
+    .placeholder { border:1px dashed var(--border); border-radius:14px; padding:18px; background:var(--surface2); color:var(--muted); }
+    .apps { display:grid; grid-template-columns:repeat(auto-fit,minmax(250px,1fr)); gap:14px; }
+    .app-tile { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:16px; box-shadow:var(--shadow); display:flex; flex-direction:column; gap:12px; }
+    .app-tile h3 { margin:0; font-size:18px; }
+    .app-tile p { margin:0; color:var(--muted); line-height:1.5; }
+    .status { display:inline-flex; align-items:center; gap:8px; padding:6px 10px; border-radius:999px; font-size:12px; font-weight:700; background:#e9f4ef; color:var(--success); }
+    .status.warn { background:#f7ece3; color:var(--warn); }
+    .status.danger { background:#f4e0ea; color:var(--danger); }
+    .btn { border:none; border-radius:12px; padding:10px 14px; font-weight:700; }
+    .btn.primary { background:var(--primary); color:white; }
+    .btn.secondary { background:var(--surface2); color:var(--text); border:1px solid var(--border); }
+    .toolbar { display:flex; gap:10px; flex-wrap:wrap; }
+    .footnote { margin-top:14px; font-size:12px; color:var(--muted); }
+    .data-table { width:100%; border-collapse:collapse; }
+    .data-table th, .data-table td { padding:12px 10px; border-bottom:1px solid var(--border); text-align:left; vertical-align:middle; }
+    .data-table thead th { font-size:12px; text-transform:uppercase; letter-spacing:.06em; color:var(--muted); }
+    .badge { display:inline-flex; align-items:center; gap:6px; padding:4px 8px; border-radius:999px; font-size:12px; font-weight:700; }
+    .badge.ok { background:#e9f4ef; color:var(--success); }
+    .badge.warn { background:#f7ece3; color:var(--warn); }
+    .badge.danger { background:#f4e0ea; color:var(--danger); }
+    .modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,.55); display:none; align-items:center; justify-content:center; z-index:50; padding:16px; }
+    .modal-overlay.open { display:flex; }
+    .modal { background:var(--surface); color:var(--text); width:min(900px,100%); max-height:90vh; overflow:auto; border-radius:20px; border:1px solid var(--border); box-shadow:var(--shadow); padding:18px; }
+    .modal-head { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:14px; }
+    .modal-title { font-size:22px; margin:0; }
+    .form-grid { display:grid; gap:14px; }
+    .form-row { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+    .form-group { display:grid; gap:6px; }
+    .form-label { font-size:12px; text-transform:uppercase; letter-spacing:.06em; color:var(--muted); font-weight:700; }
+    .form-input { width:100%; border:1px solid var(--border); background:var(--surface2); color:var(--text); border-radius:12px; padding:11px 12px; }
+    .table-wrap { overflow:auto; background:var(--surface); border:1px solid var(--border); border-radius:16px; box-shadow:var(--shadow); }
+    .empty-state { padding:24px; color:var(--muted); text-align:center; }
+    @media (max-width: 860px) { .main { padding:16px; } .title { font-size:32px; } .tabbar { top:70px; } .form-row { grid-template-columns:1fr; } }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand"><div class="brand-mark"></div><div>LabTrack</div></div>
+    <div class="top-actions">
+      <div class="pill" id="sync-pill">Cloud ready</div>
+      <button class="btn secondary" onclick="toggleTheme()">Theme</button>
+      <button class="btn primary" onclick="navigate('dashboard')">Dashboard</button>
+    </div>
+  </header>
+
+  <div class="gridbar">
+    <span>Shared platform for materials, equipment, ELN, and reports.</span>
+    <span style="margin-left:auto"><strong id="record-count">0</strong> records loaded</span>
+  </div>
+
+  <div class="tabbar">
+    <button class="tab active" id="tab-dashboard" onclick="navigate('dashboard')">Dashboard</button>
+    <button class="tab" id="tab-materials" onclick="navigate('materials')">Raw Materials</button>
+    <button class="tab" id="tab-equipment" onclick="navigate('equipment')">Equipment</button>
+    <button class="tab" id="tab-eln" onclick="navigate('eln')">Electronic Lab Notebook</button>
+    <button class="tab" id="tab-reports" onclick="navigate('reports')">Reports</button>
+  </div>
+
+  <main class="main">
+    <section class="page active" id="page-dashboard">
+      <div class="hero">
+        <div>
+          <h1 class="title">LabTrack</h1>
+          <p class="subtitle">A unified laboratory platform for raw materials, equipment, electronic lab notes, and report tracking.</p>
+        </div>
+        <div class="toolbar">
+          <button class="btn primary" onclick="navigate('materials')">Open Materials</button>
+          <button class="btn secondary" onclick="navigate('equipment')">Open Equipment</button>
+        </div>
+      </div>
+      <div class="cards">
+        <div class="card"><h3>Raw Materials</h3><div class="metric" id="metric-materials">0</div><div class="muted">Materials stored in the cloud collection.</div></div>
+        <div class="card"><h3>Equipment</h3><div class="metric small">Planned</div><div class="muted">Calibration and service tracking module.</div></div>
+        <div class="card"><h3>ELN</h3><div class="metric small">Planned</div><div class="muted">Electronic notebook with QR-linked records.</div></div>
+        <div class="card"><h3>Reports</h3><div class="metric small">Planned</div><div class="muted">Tracking, approval, and release workflow.</div></div>
+      </div>
+      <div class="section">
+        <h2>Current status</h2>
+        <div class="panel">
+          <div class="status" id="cloud-status">Cloud-ready shell loaded</div>
+          <p class="subtitle" style="margin-top:12px">The raw-material tracker is now embedded inside the LabTrack shell with the same check-in, QR, and expiry behavior.</p>
+          <div class="footnote">This version keeps everything in one app shell so the next modules can share the same data model and navigation.</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="page" id="page-materials">
+      <div class="hero">
+        <div>
+          <h1 class="title">Raw Material Management</h1>
+          <p class="subtitle">Check in materials, generate QR codes, track expiry, and sync records to Firestore. QR export supports JPG printing.</p>
+        </div>
+      </div>
+      <div class="toolbar" style="margin-bottom:14px;">
+        <button class="btn secondary" onclick="materialsView('inventory')">Inventory</button>
+        <button class="btn secondary" onclick="materialsView('checkin')">Check In</button>
+        <button class="btn secondary" onclick="materialsView('expiry')">Expiry Alerts</button>
+      </div>
+
+      <div id="materials-area">
+        <section class="page active" id="materials-inventory">
+          <div class="section"><h2>Inventory</h2></div>
+          <div class="table-wrap">
+            <table class="data-table">
+              <thead>
+                <tr><th>Material</th><th>Lot / Batch</th><th>Supplier</th><th>Check-In</th><th>Expiry</th><th>Quantity</th><th>Status</th><th>Actions</th></tr>
+              </thead>
+              <tbody id="inventory-tbody"></tbody>
+            </table>
+            <div id="inventory-empty" class="empty-state" style="display:none;">No materials found.</div>
+          </div>
+        </section>
+        <section class="page" id="materials-checkin">
+          <div class="section"><h2>Check In</h2></div>
+          <div class="panel" style="max-width:760px;">
+            <div class="form-grid">
+              <div class="form-group"><label class="form-label">Material Name *</label><input class="form-input" id="ci-name" type="text"></div>
+              <div class="form-row">
+                <div class="form-group"><label class="form-label">Lot / Batch</label><input class="form-input" id="ci-lot" type="text"></div>
+                <div class="form-group"><label class="form-label">Supplier</label><input class="form-input" id="ci-supplier" type="text"></div>
+              </div>
+              <div class="form-row">
+                <div class="form-group"><label class="form-label">Category</label><input class="form-input" id="ci-category" type="text"></div>
+                <div class="form-group"><label class="form-label">Quantity *</label><input class="form-input" id="ci-qty" type="number" step="any"></div>
+              </div>
+              <div class="form-row">
+                <div class="form-group"><label class="form-label">Unit</label><input class="form-input" id="ci-unit" type="text"></div>
+                <div class="form-group"><label class="form-label">Check-In Date *</label><input class="form-input" id="ci-checkin-date" type="text" readonly style="cursor:pointer;"></div>
+              </div>
+              <div class="form-row">
+                <div class="form-group"><label class="form-label">Expiry Date *</label><input class="form-input" id="ci-expiry" type="text" readonly style="cursor:pointer;"></div>
+                <div class="form-group"><label class="form-label">Notes</label><input class="form-input" id="ci-notes" type="text"></div>
+              </div>
+              <div id="ci-error" class="muted" style="color:var(--danger);display:none;margin-bottom:8px;"></div>
+              <div class="toolbar"><button class="btn secondary" onclick="clearCheckInForm()">Clear</button><button class="btn primary" onclick="submitCheckInFromPage()">Check In &amp; Generate QR</button></div>
+            </div>
+          </div>
+        </section>
+        <section class="page" id="materials-expiry">
+          <div class="section"><h2>Expiry Alerts</h2></div>
+          <div id="expiry-content"></div>
+        </section>
+      </div>
+    </section>
+
+    <section class="page" id="page-equipment"><div class="hero"><div><h1 class="title">Equipment Management</h1><p class="subtitle">Calibration, service dates, and equipment QR tracking will live here.</p></div></div><div class="panel"><div class="placeholder">Equipment management placeholder.</div></div></section>
+    <section class="page" id="page-eln"><div class="hero"><div><h1 class="title">Electronic Laboratory Notebook</h1><p class="subtitle">Experiment records, linked materials/equipment, and searchable notes will live here.</p></div></div><div class="panel"><div class="placeholder">ELN placeholder.</div></div></section>
+    <section class="page" id="page-reports"><div class="hero"><div><h1 class="title">Report Tracking</h1><p class="subtitle">Draft, review, approval, and export workflows will live here.</p></div></div><div class="panel"><div class="placeholder">Report tracking placeholder.</div></div></section>
+  </main>
+
+  <div class="modal-overlay" id="qr-modal">
+    <div class="modal">
+      <div class="modal-head"><h2 class="modal-title">QR Code Generated</h2><button class="btn secondary" onclick="closeQRModal()">Close</button></div>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:14px;">
+        <div id="qr-meta" style="text-align:center;font-weight:700"></div>
+        <div style="background:#fff;padding:12px;border-radius:16px;border:1px solid var(--border);display:inline-block"><div id="qr-wrap"></div></div>
+        <div class="toolbar">
+          <button class="btn secondary" onclick="downloadQRJPG()">Download JPG</button>
+          <button class="btn secondary" onclick="downloadQRPNG()">Download PNG</button>
+          <button class="btn secondary" onclick="printQR()">Print</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let materials = [];
+    let currentQRMaterial = null;
+    let today = new Date();
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyDF3tRtxWv8vCxqqtuvRSnSCkWO8foqAGI",
+      authDomain: "mattrack-2ee94.firebaseapp.com",
+      projectId: "mattrack-2ee94",
+      storageBucket: "mattrack-2ee94.firebasestorage.app",
+      messagingSenderId: "473811104261",
+      appId: "1:473811104261:web:885b2df3a01a90b0d0626c"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+    const matsCol = db.collection('materials');
+
+    function fmt(d){ return d.toISOString().split('T')[0]; }
+    function addDays(d,n){ const x=new Date(d); x.setDate(x.getDate()+n); return x; }
+    function setTodayDates(){ const t=fmt(new Date()); ['ci-checkin-date','m-checkin-date'].forEach(id=>{ const el=document.getElementById(id); if(el) { el.value=t; if(el._picker) el._picker.setDate(new Date(), true); } }); ['ci-expiry','m-expiry'].forEach(id=>{ const el=document.getElementById(id); if(el) { el.value=''; if(el._picker) el._picker.setDate(null); } }); }
+    function showError(el,msg){ el.textContent=msg; el.style.display='block'; }
+    function clearError(el){ el.textContent=''; el.style.display='none'; }
+
+    function initDatePickers() {
+      ['ci-checkin-date','ci-expiry','m-checkin-date','m-expiry'].forEach(id => {
+        const field = document.getElementById(id);
+        if (!field) return;
+        field.readOnly = true;
+        field.style.cursor = 'pointer';
+        const isCheckin = id.includes('checkin');
+        const picker = new Pikaday({
+          field: field,
+          container: document.body,
+          format: 'YYYY-MM-DD',
+          toString: date => fmt(date),
+          parse: str => new Date(str),
+          defaultDate: isCheckin ? new Date() : null,
+          setDefaultDate: isCheckin,
+          position: 'bottom left',
+          reposition: true,
+          onSelect: function() {
+            field.value = fmt(picker.getDate());
+          }
+        });
+        field._picker = picker;
+        // clicking the field opens the picker
+        field.addEventListener('click', () => picker.show());
+      });
+    }
+    function getStatus(m){ const d=new Date(); d.setHours(0,0,0,0); const e=new Date(m.expiryDate); e.setHours(0,0,0,0); const left=Math.ceil((e-d)/(1000*60*60*24)); if(left<0) return {k:'danger',label:'Expired',left}; if(left<=30) return {k:'warn',label:'Expiring soon',left}; return {k:'ok',label:'In date',left}; }
+    function statusBadge(s){ return `<span class="badge ${s.k}">${s.label}${s.k!=='ok' ? ' ('+Math.abs(s.left)+'d)' : ''}</span>`; }
+
+    function loadDemoIfEmpty(){
+      if(materials.length) return;
+      const t=new Date();
+      materials=[
+        { id:'MAT-1001', name:'Hydrocolloid Sheet A-200', lot:'LOT-2024-001', supplier:'ConvaTec', category:'Hydrocolloid', qty:50, unit:'sheets', checkinDate:fmt(addDays(t,-30)), expiryDate:fmt(addDays(t,180)), notes:'Store below 25°C' },
+        { id:'MAT-1002', name:'Carboxymethylcellulose Powder', lot:'CMC-2024-07', supplier:'Ashland', category:'Polymer', qty:12.5, unit:'kg', checkinDate:fmt(addDays(t,-90)), expiryDate:fmt(addDays(t,-5)), notes:'Keep dry' },
+        { id:'MAT-1003', name:'Medical Grade Adhesive MG-40', lot:'ADH-0321', supplier:'Nitto', category:'Adhesive', qty:6, unit:'rolls', checkinDate:fmt(addDays(t,-14)), expiryDate:fmt(addDays(t,20)), notes:'Refrigerate after opening' }
+      ];
+      renderTable();
+    }
+
+    function startFirestore(){
+      matsCol.onSnapshot(snap => {
+        materials = [];
+        snap.forEach(doc => materials.push({ _docId: doc.id, ...doc.data() }));
+        renderTable();
+        renderExpiryPage();
+        document.getElementById('record-count').textContent = materials.length;
+        document.getElementById('metric-materials').textContent = materials.length;
+        document.getElementById('cloud-status').textContent = 'Cloud sync ready — ' + materials.length + ' materials loaded';
+      }, err => {
+        document.getElementById('cloud-status').textContent = 'Cloud sync error — check Firestore rules / network';
+      });
+    }
+
+    function renderTable(){
+      const tbody = document.getElementById('inventory-tbody');
+      const empty = document.getElementById('inventory-empty');
+      if(!materials.length){ tbody.innerHTML=''; empty.style.display='block'; return; }
+      empty.style.display='none';
+      tbody.innerHTML = materials.map(m => { const s=getStatus(m); return `<tr><td><strong>${m.name}</strong><div class="muted">${m.id}</div></td><td>${m.lot||'—'}</td><td>${m.supplier||'—'}</td><td>${m.checkinDate}</td><td>${m.expiryDate}</td><td>${m.qty} ${m.unit||''}</td><td>${statusBadge(s)}</td><td><div class="toolbar"><button class="btn secondary" onclick="showQR('${m.id}')">View QR</button><button class="btn secondary" onclick="deleteMaterial('${m.id}')">Delete</button></div></td></tr>`; }).join('');
+      const exp = materials.filter(m => getStatus(m).k === 'warn').length;
+      const exd = materials.filter(m => getStatus(m).k === 'danger').length;
+      document.getElementById('metric-materials').textContent = materials.length;
+      const ec = document.getElementById('cloud-status'); if(ec && !ec.textContent.includes('Cloud sync error')) ec.textContent = 'Cloud sync ready — ' + materials.length + ' materials loaded';
+      const e1 = document.getElementById('metric-expiring'); if(e1) e1.textContent = exp;
+      const e2 = document.getElementById('metric-expired'); if(e2) e2.textContent = exd;
+      document.getElementById('record-count').textContent = materials.length;
+    }
+
+    function renderExpiryPage(){
+      const wrap=document.getElementById('expiry-content');
+      const exp=materials.filter(m=>getStatus(m).k==='danger');
+      const soon=materials.filter(m=>getStatus(m).k==='warn');
+      wrap.innerHTML = `<div class="cards"><div class="card"><h3>Expired</h3><div class="metric small">${exp.length}</div><div class="muted">Materials past expiry date.</div></div><div class="card"><h3>Expiring Soon</h3><div class="metric small">${soon.length}</div><div class="muted">Within 30 days.</div></div></div>` + (exp.length||soon.length ? `<div class="table-wrap"><table class="data-table"><thead><tr><th>Material</th><th>Expiry</th><th>Status</th><th>Actions</th></tr></thead><tbody>${[...exp,...soon].map(m=>{ const s=getStatus(m); return `<tr><td>${m.name}</td><td>${m.expiryDate}</td><td>${statusBadge(s)}</td><td><div class="toolbar"><button class="btn secondary" onclick="showQR('${m.id}')">View QR</button></div></td></tr>`; }).join('')}</tbody></table></div>` : '<div class="panel">All materials are in date.</div>');
+    }
+
+    function materialsView(which){
+      ['materials-inventory','materials-checkin','materials-expiry'].forEach(id=>document.getElementById(id).classList.remove('active'));
+      const map = { inventory:'materials-inventory', checkin:'materials-checkin', expiry:'materials-expiry' };
+      document.getElementById(map[which]).classList.add('active');
+    }
+
+    function clearCheckInForm(){ ['ci-name','ci-lot','ci-supplier','ci-category','ci-qty','ci-unit','ci-notes'].forEach(id=>document.getElementById(id).value=''); setTodayDates(); const e=document.getElementById('ci-error'); if(e){e.textContent='';e.style.display='none';} }
+
+    function buildData(v){
+      return [
+        'ID: ' + (v.id||''),
+        'Name: ' + (v.name||''),
+        'Lot/Batch: ' + (v.lot||'N/A'),
+        'Supplier: ' + (v.supplier||'N/A'),
+        'Category: ' + (v.category||'N/A'),
+        'Qty: ' + (v.qty||'') + ' ' + (v.unit||''),
+        'Check-In: ' + (v.checkinDate||''),
+        'Expiry: ' + (v.expiryDate||''),
+        'Notes: ' + (v.notes||'')
+      ].join('\n');
+    }
+
+    function showQRDirect(mat){
+      currentQRMaterial = mat;
+      document.getElementById('qr-meta').textContent = mat.name + ' · ' + mat.id + (mat.lot ? ' · Lot: ' + mat.lot : '');
+      const wrap = document.getElementById('qr-wrap');
+      wrap.innerHTML = '';
+      new QRCode(wrap, {
+        text: buildData(mat),
+        width: 256,
+        height: 256,
+        colorDark: '#01696f',
+        colorLight: '#ffffff',
+        correctLevel: QRCode.CorrectLevel.M
+      });
+      document.getElementById('qr-modal').classList.add('open');
+    }
+    function showQR(id){
+      let m = materials.find(x=>x.id===id); if(!m && currentQRMaterial && currentQRMaterial.id===id) m=currentQRMaterial; if(!m) return;
+      showQRDirect(m);
+    }
+    function closeQRModal(){ document.getElementById('qr-modal').classList.remove('open'); }
+    function downloadQRJPG(){
+      if(!currentQRMaterial) return;
+      const img = document.querySelector('#qr-wrap img') || document.querySelector('#qr-wrap canvas');
+      if(!img) return;
+      const canvas = document.createElement('canvas'); canvas.width=512; canvas.height=512;
+      const ctx = canvas.getContext('2d'); ctx.fillStyle='#ffffff'; ctx.fillRect(0,0,512,512);
+      ctx.drawImage(img,0,0,512,512);
+      const a=document.createElement('a'); a.download=currentQRMaterial.id+'-qr.jpg'; a.href=canvas.toDataURL('image/jpeg',0.95); a.click();
+    }
+    function downloadQRPNG(){
+      if(!currentQRMaterial) return;
+      const img = document.querySelector('#qr-wrap img') || document.querySelector('#qr-wrap canvas');
+      if(!img) return;
+      const canvas = document.createElement('canvas'); canvas.width=512; canvas.height=512;
+      const ctx = canvas.getContext('2d'); ctx.fillStyle='#ffffff'; ctx.fillRect(0,0,512,512);
+      ctx.drawImage(img,0,0,512,512);
+      const a=document.createElement('a'); a.download=currentQRMaterial.id+'-qr.png'; a.href=canvas.toDataURL('image/png'); a.click();
+    }
+    function printQR(){
+      if(!currentQRMaterial) return;
+      const img = document.querySelector('#qr-wrap img') || document.querySelector('#qr-wrap canvas');
+      if(!img) return;
+      const canvas = document.createElement('canvas'); canvas.width=512; canvas.height=512;
+      const ctx = canvas.getContext('2d'); ctx.fillStyle='#ffffff'; ctx.fillRect(0,0,512,512);
+      ctx.drawImage(img,0,0,512,512);
+      const w=window.open('','_blank');
+      w.document.write('<html><body style="margin:0;display:flex;align-items:center;justify-content:center;height:100vh"><div style="text-align:center"><img src="'+canvas.toDataURL('image/jpeg',0.95)+'" style="width:300px;height:300px"><br><b>'+currentQRMaterial.name+'</b><br>'+currentQRMaterial.id+'</div></body></html>');
+      w.document.close(); w.print();
+    }
+
+    function validateMaterial(v, errEl){ if(!v.name){ showError(errEl,'Material name is required.'); return false; } if(!v.qty || v.qty<=0){ showError(errEl,'Quantity must be greater than 0.'); return false; } if(!v.checkinDate){ showError(errEl,'Check-in date is required.'); return false; } if(!v.expiryDate){ showError(errEl,'Expiry date is required.'); return false; } clearError(errEl); return true; }
+
+    function values(prefix){ return { name:document.getElementById(prefix+'name').value.trim(), lot:document.getElementById(prefix+'lot').value.trim(), supplier:document.getElementById(prefix+'supplier').value.trim(), category:document.getElementById(prefix+'category').value.trim(), qty:parseFloat(document.getElementById(prefix+'qty').value), unit:document.getElementById(prefix+'unit').value.trim(), checkinDate:document.getElementById(prefix+'checkin-date').value.trim(), expiryDate:document.getElementById(prefix+'expiry').value.trim(), notes:document.getElementById(prefix+'notes').value.trim() }; }
+
+    function createMaterial(v){ const id='MAT-' + fmt(new Date()).replace(/-/g,'') + '-' + Math.floor(Math.random()*9000+1000); const mat = { id, ...v }; return matsCol.add(mat).then(docRef => { const result = { ...mat, _docId: docRef.id }; currentQRMaterial = result; materials.push(result); return result; }); }
+    function submitCheckInFromPage(){ const v = values('ci-'); const err=document.getElementById('ci-error'); if(!validateMaterial(v, err)) return; createMaterial(v).then(mat => { clearCheckInForm(); renderTable(); renderExpiryPage(); materialsView('inventory'); showQRDirect(mat); }).catch(e => { if(err){ err.textContent='Save failed: '+e.message; err.style.display='block'; } else alert('Save failed: '+e.message); }); }
+
+    function viewMaterial(id){ const m = materials.find(x=>x.id===id); if(!m) return; showQRDirect(m); }
+    function deleteMaterial(id){ const m=materials.find(x=>x.id===id); if(!m) return; if(!confirm('Delete "'+m.name+'"?')) return; if(m._docId){ matsCol.doc(m._docId).delete().catch(e=>alert('Delete failed: '+e.message)); } }
+
+    function toggleTheme(){ const cur = document.documentElement.getAttribute('data-theme'); document.documentElement.setAttribute('data-theme', cur==='dark' ? 'light' : 'dark'); }
+    function navigate(page){ document.querySelectorAll('.page').forEach(p=>p.classList.remove('active')); const t=document.getElementById('page-'+page); if(t) t.classList.add('active'); document.querySelectorAll('.tab').forEach(n=>n.classList.remove('active')); const tb=document.getElementById('tab-'+page); if(tb) tb.classList.add('active'); }
+
+    window.addEventListener('load', () => { setTodayDates(); initDatePickers(); startFirestore(); loadDemoIfEmpty(); });
+  </script>
+</body>
+</html>
