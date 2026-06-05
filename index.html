@@ -1,0 +1,705 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>LabTrack</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
+<style>
+:root{--bg:#0f172a;--panel:#111827;--card:#1f2937;--text:#e5e7eb;--muted:#94a3b8;--accent:#14b8a6;--warn:#f59e0b;--danger:#ef4444;--ok:#22c55e;--line:#334155;}
+*{box-sizing:border-box}
+body{margin:0;font-family:Arial,sans-serif;background:linear-gradient(180deg,#0b1220,#111827);color:var(--text);min-height:100vh}
+header{padding:14px 20px 0;background:#0b1220;border-bottom:1px solid var(--line);position:sticky;top:0;z-index:100}
+.hrow{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:10px}
+h1{margin:0;font-size:22px;color:var(--accent)}
+.htag{font-size:12px;color:var(--muted)}
+nav{display:flex;gap:6px;flex-wrap:wrap}
+.tab{padding:10px 16px;border:none;background:transparent;color:var(--muted);border-bottom:3px solid transparent;cursor:pointer;font:inherit;font-size:14px}
+.tab.active{color:var(--accent);border-bottom-color:var(--accent);font-weight:700}
+.tab:hover{color:var(--text)}
+section[id]{display:none;padding:20px;max-width:1400px;margin:0 auto}
+section[id].active{display:block}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin-bottom:18px}
+.card{background:rgba(17,24,39,.95);border:1px solid var(--line);border-radius:14px;padding:16px}
+.card h3{margin:0 0 4px;font-size:13px;color:var(--muted)}
+.metric{font-size:32px;font-weight:700}
+.toolbar{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px;align-items:center}
+input,select,textarea{border-radius:10px;border:1px solid var(--line);background:#0b1220;color:var(--text);padding:10px 12px;font:inherit;font-size:13px;outline:none}
+input:focus,select:focus,textarea:focus{border-color:var(--accent)}
+button{border-radius:10px;border:1px solid var(--line);background:#0b1220;color:var(--text);padding:10px 14px;font:inherit;font-size:13px;cursor:pointer}
+button.primary{background:var(--accent);color:#031b18;border-color:var(--accent);font-weight:700}
+button.danger-btn{background:rgba(239,68,68,.15);color:#fca5a5;border-color:rgba(239,68,68,.3)}
+button:hover{opacity:.85}
+.tablewrap{overflow:auto;border-radius:12px;border:1px solid var(--line);margin-bottom:16px}
+table{width:100%;border-collapse:collapse;background:#0b1220;font-size:13px}
+th,td{padding:10px 12px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+th{background:#111827;font-size:12px;color:var(--muted);position:sticky;top:0;z-index:1}
+tr:hover td{background:rgba(20,184,166,.05)}
+.badge{display:inline-block;padding:3px 8px;border-radius:999px;font-size:11px;font-weight:700}
+.b-ok{background:rgba(34,197,94,.15);color:#86efac}
+.b-warn{background:rgba(245,158,11,.15);color:#fcd34d}
+.b-danger{background:rgba(239,68,68,.15);color:#fca5a5}
+.b-info{background:rgba(20,184,166,.15);color:#99f6e4}
+.b-muted{background:rgba(148,163,184,.1);color:var(--muted)}
+.layout{display:grid;grid-template-columns:1.4fr 1fr;gap:16px}
+.panel{background:rgba(17,24,39,.95);border:1px solid var(--line);border-radius:14px;padding:16px}
+.panel h2{margin:0 0 14px;font-size:17px}
+.stack{display:grid;gap:10px}
+.split{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.split3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+.full{grid-column:1/-1}
+.muted{color:var(--muted)}
+.small{font-size:12px}
+.hidden{display:none!important}
+.list{display:grid;gap:8px;max-height:320px;overflow-y:auto}
+.item{padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:#0b1220;font-size:13px}
+.row-actions{display:flex;gap:6px;flex-wrap:wrap}
+.row-actions button{padding:5px 8px;font-size:12px}
+.alert-banner{padding:10px 14px;border-radius:10px;margin-bottom:12px;font-size:13px;display:flex;align-items:center;gap:10px}
+.alert-warn{background:rgba(245,158,11,.12);border:1px solid rgba(245,158,11,.3);color:#fcd34d}
+.alert-danger{background:rgba(239,68,68,.12);border:1px solid rgba(239,68,68,.3);color:#fca5a5}
+#modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:200;align-items:center;justify-content:center}
+#modal.open{display:flex}
+.modal-box{background:#111827;border:1px solid var(--line);border-radius:16px;padding:24px;max-width:420px;width:90%;text-align:center}
+.modal-box h3{margin:0 0 12px}
+#qrContainer{display:flex;justify-content:center;margin:12px 0}
+.qr-actions{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-top:12px}
+label.checkbox-label{display:flex;align-items:center;gap:8px;font-size:13px;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:#0b1220;cursor:pointer}
+.notice{padding:10px 14px;border-radius:10px;background:rgba(20,184,166,.08);border:1px solid rgba(20,184,166,.25);margin-bottom:14px;font-size:13px}
+@media(max-width:980px){.layout{grid-template-columns:1fr}.split{grid-template-columns:1fr}.split3{grid-template-columns:1fr 1fr}}
+@media(max-width:600px){.split{grid-template-columns:1fr}.split3{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<header>
+  <div class="hrow">
+    <div><h1>LabTrack</h1><div class="htag">Laboratory Management System</div></div>
+    <div id="syncStatus" class="small muted">● Local mode</div>
+  </div>
+  <nav>
+    <button class="tab active" onclick="showTab('materials')">Raw Materials</button>
+    <button class="tab" onclick="showTab('equipment')">Equipment</button>
+    <button class="tab" onclick="showTab('eln')">ELN</button>
+    <button class="tab" onclick="showTab('reports')">Reports</button>
+    <button class="tab" onclick="showTab('settings')">Settings</button>
+  </nav>
+</header>
+
+<!-- ══════════════════════════════════════════
+     RAW MATERIALS TAB
+═══════════════════════════════════════════ -->
+<section id="materials" class="active">
+  <div class="grid">
+    <div class="card"><h3>Total Materials</h3><div class="metric" id="matTotal">0</div></div>
+    <div class="card"><h3>Low / Expiring Soon</h3><div class="metric" id="matWarn">0</div></div>
+    <div class="card"><h3>Expired</h3><div class="metric" id="matExpired">0</div></div>
+  </div>
+  <div id="matAlerts"></div>
+  <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:16px">
+    <div style="flex:1;min-width:280px">
+      <div class="panel">
+        <h2>Check In Material</h2>
+        <div class="stack">
+          <input id="matName" placeholder="Material name"/>
+          <div class="split"><input id="matLot" placeholder="LOT / Batch"/><input id="matSupplier" placeholder="Supplier"/></div>
+          <div class="split"><input id="matQty" placeholder="Quantity" type="number"/><input id="matUnit" placeholder="Unit (g, mL…)"/></div>
+          <div class="split"><label style="font-size:13px;color:var(--muted)">Receipt date<input id="matReceived" type="date" style="margin-top:4px;width:100%"/></label><label style="font-size:13px;color:var(--muted)">Expiry date<input id="matExpiry" type="date" style="margin-top:4px;width:100%"/></label></div>
+          <input id="matLocation" placeholder="Storage location"/>
+          <textarea id="matNotes" rows="2" placeholder="Notes"></textarea>
+          <div class="split"><button class="primary" onclick="matCheckin()">Check In</button><button onclick="matReset()">Clear</button></div>
+        </div>
+      </div>
+    </div>
+    <div style="flex:2;min-width:320px">
+      <div class="panel">
+        <h2>Inventory</h2>
+        <div class="toolbar">
+          <input id="matSearch" placeholder="Search…" oninput="matRender()" style="flex:1;min-width:160px"/>
+          <button onclick="matExportCSV()">Export CSV</button>
+        </div>
+        <div class="tablewrap">
+          <table><thead><tr><th>Name</th><th>LOT</th><th>Qty</th><th>Expiry</th><th>Status</th><th>Actions</th></tr></thead>
+          <tbody id="matTbody"></tbody></table>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════
+     EQUIPMENT TAB
+═══════════════════════════════════════════ -->
+<section id="equipment">
+  <div id="eqAlerts"></div>
+  <div class="grid">
+    <div class="card"><h3>Total Equipment</h3><div class="metric" id="eqTotal">0</div></div>
+    <div class="card"><h3>Calibration Required</h3><div class="metric" id="eqCalReq">0</div></div>
+    <div class="card"><h3>Calibration Due Soon</h3><div class="metric" id="eqCalSoon">0</div></div>
+    <div class="card"><h3>Maintenance Due Soon</h3><div class="metric" id="eqMaintSoon">0</div></div>
+  </div>
+  <div class="toolbar">
+    <input id="eqSearch" placeholder="Search equipment…" oninput="eqRender()" style="min-width:200px"/>
+    <select id="eqFStatus" onchange="eqRender()"><option value="all">All statuses</option><option>Active</option><option>In Repair</option><option>Out of Service</option><option>Retired</option></select>
+    <select id="eqFCal" onchange="eqRender()"><option value="all">All calibration</option><option value="yes">Cal required</option><option value="no">No cal</option></select>
+    <button class="primary" onclick="eqOpenNew()">+ Add Equipment</button>
+    <button onclick="eqExportCSV()">Export CSV</button>
+    <button onclick="eqGenerateEmail()">Generate Alert Email</button>
+  </div>
+  <div class="layout">
+    <section class="panel">
+      <h2>Equipment Register</h2>
+      <div class="tablewrap">
+        <table><thead><tr><th>Name / Model</th><th>Status</th><th>Location</th><th>Calibration</th><th>Maintenance</th><th>Actions</th></tr></thead>
+        <tbody id="eqTbody"></tbody></table>
+      </div>
+    </section>
+    <div>
+      <div class="panel" style="margin-bottom:14px">
+        <h2 id="eqFormTitle">Add Equipment</h2>
+        <div class="stack">
+          <input id="eqId" class="hidden"/>
+          <div class="split"><input id="eqName" placeholder="Equipment name"/><input id="eqModel" placeholder="Model"/></div>
+          <div class="split"><input id="eqSerial" placeholder="Serial number"/><input id="eqManufacturer" placeholder="Manufacturer"/></div>
+          <div class="split"><input id="eqLocation" placeholder="Location"/><select id="eqStatus"><option>Active</option><option>In Repair</option><option>Out of Service</option><option>Retired</option></select></div>
+          <div class="split">
+            <label class="checkbox-label"><input type="checkbox" id="eqCalReq" onchange="eqToggleCal()"/> Calibration required</label>
+            <input id="eqInitials" placeholder="Initials" maxlength="6"/>
+          </div>
+          <div class="split"><label class="small muted">Last calibration<input id="eqLastCal" type="date" style="width:100%;margin-top:4px"/></label><label class="small muted">Calibration due<input id="eqCalDue" type="date" style="width:100%;margin-top:4px"/></label></div>
+          <div class="split"><label class="small muted">Last maintenance<input id="eqLastMaint" type="date" style="width:100%;margin-top:4px"/></label><label class="small muted">Maintenance due<input id="eqMaintDue" type="date" style="width:100%;margin-top:4px"/></label></div>
+          <textarea id="eqNotes" rows="3" placeholder="Notes / documents / issues…"></textarea>
+          <div class="split"><button class="primary" onclick="eqSave()">Save</button><button onclick="eqResetForm()">Clear</button></div>
+        </div>
+      </div>
+      <div class="panel">
+        <h2 id="eqLogsHeader">Checks &amp; Logs</h2>
+        <div class="stack">
+          <div class="split"><input id="eqLogInitials" placeholder="Initials" maxlength="6"/><select id="eqLogType"><option>Check</option><option>Usage</option><option>Fault</option><option>Maintenance</option><option>Calibration</option></select></div>
+          <textarea id="eqLogNote" rows="2" placeholder="Log note…"></textarea>
+          <button class="primary" onclick="eqAddLog()">Add Log</button>
+          <div class="muted small">Select a row in the table first, then add a log.</div>
+          <div id="eqLogs" class="list"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════
+     ELN TAB
+═══════════════════════════════════════════ -->
+<section id="eln">
+  <div class="panel"><h2>Electronic Laboratory Notebook</h2><p class="muted">Coming soon — this module is in development.</p></div>
+</section>
+
+<!-- ══════════════════════════════════════════
+     REPORTS TAB
+═══════════════════════════════════════════ -->
+<section id="reports">
+  <div class="panel"><h2>Report Generation &amp; Tracking</h2><p class="muted">Coming soon — this module is in development.</p></div>
+</section>
+
+<!-- ══════════════════════════════════════════
+     SETTINGS TAB
+═══════════════════════════════════════════ -->
+<section id="settings">
+  <div class="panel" style="max-width:600px">
+    <h2>Notification Email List</h2>
+    <p class="muted small">Add email addresses separated by commas. These will be pre-filled when you generate an alert email from the Equipment tab.</p>
+    <div class="stack">
+      <textarea id="emailList" rows="4" placeholder="user1@lab.com, user2@lab.com, manager@lab.com"></textarea>
+      <button class="primary" onclick="saveEmails()">Save Email List</button>
+      <div id="emailSaved" class="hidden notice">✓ Email list saved.</div>
+    </div>
+    <h2 style="margin-top:24px">Firebase Configuration</h2>
+    <p class="muted small">Paste your Firebase config JSON here to enable cloud sync across all devices. Leave blank to use local storage only.</p>
+    <div class="stack">
+      <textarea id="fbConfig" rows="8" placeholder='Paste your Firebase config object here...'></textarea>
+      <button class="primary" onclick="saveFirebaseConfig()">Save &amp; Connect</button>
+      <div id="fbSaved" class="hidden notice">✓ Config saved. Reload the page to connect.</div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════
+     QR MODAL
+═══════════════════════════════════════════ -->
+<div id="modal">
+  <div class="modal-box">
+    <h3 id="qrTitle">QR Code</h3>
+    <div id="qrContainer"></div>
+    <div id="qrDetails" class="small muted"></div>
+    <div class="qr-actions">
+      <button class="primary" onclick="downloadQR('jpg')">Download JPG</button>
+      <button class="primary" onclick="downloadQR('png')">Download PNG</button>
+      <button onclick="printQR()">Print</button>
+      <button onclick="closeModal()">Close</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ═══════════════════ FIREBASE LOADER ═══════════════════
+let db = null;
+let matsCol = null, equipCol = null, eqLogsCol = null;
+
+function initFirebase() {
+  const raw = localStorage.getItem('labtrack_fb_config');
+  if (!raw) return;
+  try {
+    let parsed_raw = raw;
+    try { JSON.parse(raw); } catch(e) {
+      parsed_raw = raw
+        .replace(/\/\*[\s\S]*?\*\//g,'')
+        .replace(/\/\/.*/g,'')
+        .replace(/([{,]\s*)([a-zA-Z_][\w]*)\s*:/g, '$1"$2":')
+        .replace(/:\s*\'([^\']*)\'\s*([,}])/g, ': "$1"$2');
+    }
+    const cfg = JSON.parse(parsed_raw);
+    if (typeof firebase === 'undefined') {
+      const s1 = document.createElement('script');
+      s1.src = 'https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js';
+      s1.onload = () => {
+        const s2 = document.createElement('script');
+        s2.src = 'https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js';
+        s2.onload = () => {
+          if (!firebase.apps.length) firebase.initializeApp(cfg);
+          db = firebase.firestore();
+          matsCol = db.collection('materials');
+          equipCol = db.collection('equipment');
+          eqLogsCol = db.collection('equipment_logs');
+          document.getElementById('syncStatus').textContent = '● Cloud sync active';
+          document.getElementById('syncStatus').style.color = '#86efac';
+          loadMaterialsFromFirestore();
+          loadEquipmentFromFirestore();
+        };
+        document.head.appendChild(s2);
+      };
+      document.head.appendChild(s1);
+    }
+  } catch(e) { console.warn('Firebase init failed', e); }
+}
+
+// ═══════════════════ TAB NAVIGATION ═══════════════════
+function showTab(id) {
+  document.querySelectorAll('section[id]').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  event.target.classList.add('active');
+}
+
+// ═══════════════════ SETTINGS ═══════════════════
+function saveEmails() {
+  localStorage.setItem('labtrack_email_list', document.getElementById('emailList').value.trim());
+  const el = document.getElementById('emailSaved');
+  el.classList.remove('hidden');
+  setTimeout(() => el.classList.add('hidden'), 3000);
+}
+function saveFirebaseConfig() {
+  let v = document.getElementById('fbConfig').value.trim();
+  // Convert JS object notation to valid JSON (handle unquoted keys and single quotes)
+  try {
+    // First try direct JSON parse
+    JSON.parse(v);
+  } catch(e1) {
+    try {
+      // Try converting JS object literal to JSON: quote unquoted keys, replace single quotes
+      let converted = v
+        .replace(/\/\*[\s\S]*?\*\//g,'')   // remove block comments
+        .replace(/\/\/.*/g,'')                  // remove line comments
+        .replace(/([{,]\s*)([a-zA-Z_][\w]*)\s*:/g, '$1"$2":') // quote unquoted keys
+        .replace(/:\s*\'([^\']*)\'\s*([,}])/g, ': "$1"$2'); // single to double quotes
+      JSON.parse(converted);
+      v = converted;
+    } catch(e2) {
+      return alert('Could not parse Firebase config. Please paste the config exactly as copied from Firebase Console.');
+    }
+  }
+  localStorage.setItem('labtrack_fb_config', v);
+  const el = document.getElementById('fbSaved');
+  el.classList.remove('hidden');
+  setTimeout(() => el.classList.add('hidden'), 3000);
+}
+function loadSettings() {
+  const emails = localStorage.getItem('labtrack_email_list') || '';
+  document.getElementById('emailList').value = emails;
+  const fbCfg = localStorage.getItem('labtrack_fb_config') || '';
+  document.getElementById('fbConfig').value = fbCfg;
+}
+
+// ═══════════════════ UTILITIES ═══════════════════
+function uid() { return 'id_' + Math.random().toString(36).slice(2, 10); }
+function fval(id) { return (document.getElementById(id) || {}).value?.trim() || ''; }
+function daysUntil(dateStr) {
+  if (!dateStr) return null;
+  const d = new Date(dateStr + 'T00:00:00');
+  const now = new Date(); now.setHours(0,0,0,0);
+  return Math.round((d - now) / 86400000);
+}
+
+// ═══════════════════ RAW MATERIALS ═══════════════════
+let materials = JSON.parse(localStorage.getItem('labtrack_materials') || '[]');
+
+function matSave() { localStorage.setItem('labtrack_materials', JSON.stringify(materials)); }
+
+function loadMaterialsFromFirestore() {
+  if (!matsCol) return;
+  matsCol.orderBy('receivedDate', 'desc').onSnapshot(snap => {
+    materials = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    matSave();
+    matRender();
+  });
+}
+
+function matCheckin() {
+  const name = fval('matName');
+  if (!name) return alert('Material name is required.');
+  const item = {
+    id: uid(), name, lot: fval('matLot'), supplier: fval('matSupplier'),
+    quantity: fval('matQty'), unit: fval('matUnit'),
+    receivedDate: fval('matReceived'), expiryDate: fval('matExpiry'),
+    location: fval('matLocation'), notes: fval('matNotes'),
+    createdAt: new Date().toISOString()
+  };
+  if (matsCol) {
+    matsCol.add(item).then(ref => { item.id = ref.id; }).catch(e => console.warn(e));
+  } else {
+    materials.unshift(item);
+    matSave();
+  }
+  matReset();
+  matRender();
+}
+
+function matReset() {
+  ['matName','matLot','matSupplier','matQty','matUnit','matReceived','matExpiry','matLocation','matNotes'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = '';
+  });
+}
+
+function matDelete(id) {
+  if (!confirm('Delete this material?')) return;
+  if (matsCol) { matsCol.doc(id).delete(); } else { materials = materials.filter(m => m.id !== id); matSave(); matRender(); }
+}
+
+function matExpiryBadge(dateStr) {
+  const d = daysUntil(dateStr);
+  if (d === null) return "<span class='badge b-muted'>No expiry</span>";
+  if (d < 0) return `<span class='badge b-danger'>Expired ${Math.abs(d)}d ago</span>`;
+  if (d <= 30) return `<span class='badge b-warn'>Expires in ${d}d</span>`;
+  return `<span class='badge b-ok'>OK (${d}d)</span>`;
+}
+
+function matRender() {
+  const q = fval('matSearch').toLowerCase();
+  const list = materials.filter(m => [m.name,m.lot,m.supplier,m.location].join(' ').toLowerCase().includes(q));
+  document.getElementById('matTbody').innerHTML = list.map(m =>
+    `<tr>
+      <td><b>${m.name}</b><div class="muted small">${m.supplier || ''} ${m.location ? '• '+m.location : ''}</div></td>
+      <td>${m.lot || '—'}</td>
+      <td>${m.quantity || '—'} ${m.unit || ''}</td>
+      <td>${m.expiryDate || '—'}</td>
+      <td>${matExpiryBadge(m.expiryDate)}</td>
+      <td><div class="row-actions">
+        <button onclick="showMatQR('${m.id}')">View QR</button>
+        <button class="danger-btn" onclick="matDelete('${m.id}')">Delete</button>
+      </div></td>
+    </tr>`
+  ).join('') || '<tr><td colspan="6" class="muted">No materials found.</td></tr>';
+
+  const expired = materials.filter(m => { const d = daysUntil(m.expiryDate); return d !== null && d < 0; }).length;
+  const warn = materials.filter(m => { const d = daysUntil(m.expiryDate); return d !== null && d >= 0 && d <= 30; }).length;
+  document.getElementById('matTotal').textContent = materials.length;
+  document.getElementById('matWarn').textContent = warn;
+  document.getElementById('matExpired').textContent = expired;
+
+  const alerts = [];
+  if (expired > 0) alerts.push(`<div class='alert-banner alert-danger'>⚠ ${expired} material(s) expired</div>`);
+  if (warn > 0) alerts.push(`<div class='alert-banner alert-warn'>⚡ ${warn} material(s) expiring within 30 days</div>`);
+  document.getElementById('matAlerts').innerHTML = alerts.join('');
+}
+
+function matExportCSV() {
+  const rows = [['name','lot','supplier','quantity','unit','received','expiry','location','notes']].concat(
+    materials.map(m => [m.name,m.lot,m.supplier,m.quantity,m.unit,m.receivedDate,m.expiryDate,m.location,(m.notes||'').replaceAll('\n',' ')])
+  );
+  const csv = rows.map(r => r.map(v => `"${String(v??'').replaceAll('"','""')}"`).join(',')).join('\n');
+  const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([csv],{type:'text/csv'}));
+  a.download = 'labtrack_materials.csv'; a.click();
+}
+
+// ═══════════════════ QR CODE ═══════════════════
+let currentQRData = '';
+function showMatQR(id) {
+  const m = materials.find(x => x.id === id);
+  if (!m) return;
+  currentQRData = `${m.name}|LOT:${m.lot||''}|Supplier:${m.supplier||''}|Qty:${m.quantity||''} ${m.unit||''}|Expiry:${m.expiryDate||''}`;
+  document.getElementById('qrTitle').textContent = m.name;
+  document.getElementById('qrDetails').textContent = `LOT: ${m.lot||'—'} | Expiry: ${m.expiryDate||'—'}`;
+  showQR(currentQRData);
+}
+function showQR(data) {
+  const c = document.getElementById('qrContainer');
+  c.innerHTML = '';
+  new QRCode(c, { text: data, width: 200, height: 200, colorDark: '#e5e7eb', colorLight: '#111827' });
+  document.getElementById('modal').classList.add('open');
+}
+function closeModal() { document.getElementById('modal').classList.remove('open'); }
+function downloadQR(fmt) {
+  const canvas = document.querySelector('#qrContainer canvas');
+  if (!canvas) return alert('QR not ready');
+  const a = document.createElement('a');
+  a.href = canvas.toDataURL(fmt === 'jpg' ? 'image/jpeg' : 'image/png');
+  a.download = `qr_${Date.now()}.${fmt}`;
+  a.click();
+}
+function printQR() {
+  const canvas = document.querySelector('#qrContainer canvas');
+  if (!canvas) return;
+  const w = window.open('');
+  w.document.write(`<img src="${canvas.toDataURL()}" style="width:300px"/>`);
+  w.print();
+}
+
+// ═══════════════════ EQUIPMENT ═══════════════════
+let equipment = JSON.parse(localStorage.getItem('labtrack_equipment') || '[]');
+let eqLogs = JSON.parse(localStorage.getItem('labtrack_eqlogs') || '[]');
+let selectedEqId = null;
+
+function eqSaveStore() {
+  localStorage.setItem('labtrack_equipment', JSON.stringify(equipment));
+  localStorage.setItem('labtrack_eqlogs', JSON.stringify(eqLogs));
+}
+
+function loadEquipmentFromFirestore() {
+  if (!equipCol) return;
+  equipCol.onSnapshot(snap => {
+    equipment = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    eqSaveStore();
+    eqRender();
+  });
+  eqLogsCol.orderBy('at','desc').onSnapshot(snap => {
+    eqLogs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    eqSaveStore();
+    eqRenderLogs();
+  });
+}
+
+function eqOpenNew() { eqResetForm(); document.getElementById('eqName').focus(); }
+
+function eqResetForm() {
+  selectedEqId = null;
+  document.getElementById('eqFormTitle').textContent = 'Add Equipment';
+  ['eqId','eqName','eqModel','eqSerial','eqManufacturer','eqLocation','eqInitials','eqLastCal','eqCalDue','eqLastMaint','eqMaintDue','eqNotes','eqLogInitials','eqLogNote'].forEach(i => { const el = document.getElementById(i); if(el) el.value = ''; });
+  document.getElementById('eqStatus').value = 'Active';
+  document.getElementById('eqCalReq').checked = false;
+  eqToggleCal();
+  eqRenderLogs();
+}
+
+function eqToggleCal() {
+  const on = document.getElementById('eqCalReq').checked;
+  ['eqLastCal','eqCalDue'].forEach(i => {
+    const el = document.getElementById(i);
+    if (el) {
+      el.disabled = false;
+      el.style.opacity = on ? '1' : '0.4';
+    }
+  });
+}
+
+function eqSave() {
+  const name = fval('eqName');
+  if (!name) return alert('Equipment name is required.');
+  const item = {
+    id: fval('eqId') || uid(), name, model: fval('eqModel'), serial: fval('eqSerial'),
+    manufacturer: fval('eqManufacturer'), location: fval('eqLocation'), status: fval('eqStatus'),
+    calReq: document.getElementById('eqCalReq').checked,
+    lastCal: fval('eqLastCal'), calDue: fval('eqCalDue'),
+    lastMaint: fval('eqLastMaint'), maintDue: fval('eqMaintDue'),
+    notes: fval('eqNotes'), updatedBy: fval('eqInitials'), updatedAt: new Date().toISOString()
+  };
+  if (equipCol) {
+    equipCol.doc(item.id).set(item);
+  } else {
+    const idx = equipment.findIndex(x => x.id === item.id);
+    idx >= 0 ? equipment[idx] = item : equipment.unshift(item);
+    eqSaveStore();
+  }
+  eqResetForm();
+  eqRender();
+}
+
+function eqEdit(id) {
+  const e = equipment.find(x => x.id === id);
+  if (!e) return;
+  selectedEqId = id;
+  document.getElementById('eqFormTitle').textContent = 'Edit: ' + e.name;
+  const fields = ['id','name','model','serial','manufacturer','location','status','lastCal','calDue','lastMaint','maintDue','notes','updatedBy'];
+  fields.forEach(k => { const el = document.getElementById('eq' + k.charAt(0).toUpperCase() + k.slice(1)); if(el) el.value = e[k] || ''; });
+  document.getElementById('eqInitials').value = e.updatedBy || '';
+  document.getElementById('eqCalReq').checked = !!e.calReq;
+  eqToggleCal();
+  eqRenderLogs();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function eqDelete(id) {
+  if (!confirm('Delete this equipment and all its logs?')) return;
+  if (equipCol) {
+    equipCol.doc(id).delete().catch(e => alert('Delete failed: ' + e.message));
+    // Delete all associated logs from Firestore
+    eqLogsCol.where('equipmentId', '==', id).get().then(snap => {
+      snap.forEach(doc => doc.ref.delete());
+    }).catch(e => console.warn('Log delete error:', e));
+  }
+  // Always update local state immediately
+  equipment = equipment.filter(x => x.id !== id);
+  eqLogs = eqLogs.filter(x => x.equipmentId !== id);
+  eqSaveStore();
+  if (selectedEqId === id) { selectedEqId = null; eqResetForm(); }
+  eqRender();
+}
+
+function eqAddLog() {
+  if (!selectedEqId) return alert('Select an equipment item from the table first.');
+  const initials = fval('eqLogInitials'), note = fval('eqLogNote'), type = fval('eqLogType');
+  if (!initials || !note) return alert('Initials and note are required.');
+  const log = { id: uid(), equipmentId: selectedEqId, type, initials, note, at: new Date().toISOString() };
+  if (eqLogsCol) {
+    eqLogsCol.doc(log.id).set(log).catch(e => console.warn('Log save error:', e));
+  }
+  eqLogs.unshift(log);
+  eqSaveStore();
+  eqRenderLogs();
+  document.getElementById('eqLogNote').value = '';
+}
+
+function eqDaysBadge(due, reqFlag, thresholds) {
+  const d = daysUntil(due);
+  if (!reqFlag && d === null) return "<span class='badge b-muted'>N/A</span>";
+  if (d === null) return "<span class='badge b-warn'>No date set</span>";
+  if (d < 0) return `<span class='badge b-danger'>Overdue ${Math.abs(d)}d</span>`;
+  const isAlert = thresholds.some(t => d <= t);
+  if (isAlert) return `<span class='badge b-warn'>${d}d remaining</span>`;
+  return `<span class='badge b-ok'>${d}d</span>`;
+}
+
+function eqRender() {
+  const q = fval('eqSearch').toLowerCase();
+  const fs = document.getElementById('eqFStatus')?.value || 'all';
+  const fc = document.getElementById('eqFCal')?.value || 'all';
+  const list = equipment.filter(e => {
+    const text = [e.name,e.model,e.serial,e.manufacturer,e.location,e.notes].join(' ').toLowerCase();
+    return (!q || text.includes(q)) && (fs === 'all' || e.status === fs) && (fc === 'all' || (fc === 'yes' ? e.calReq : !e.calReq));
+  });
+
+  document.getElementById('eqTbody').innerHTML = list.map(e =>
+    `<tr onclick="eqSelectRow('${e.id}')">
+      <td><b>${e.name}</b><div class="muted small">${e.model||''} ${e.serial ? '• S/N:'+e.serial : ''}</div></td>
+      <td><span class='badge b-info'>${e.status}</span></td>
+      <td>${e.location||'—'}</td>
+      <td>${(e.calReq || e.calDue) ? eqDaysBadge(e.calDue, true, [90,60,30]) : "<span class='badge b-muted'>Not required</span>"}</td>
+      <td>${eqDaysBadge(e.maintDue, true, [30,14,7])}</td>
+      <td><div class="row-actions">
+        <button onclick="event.stopPropagation();eqEdit('${e.id}')">Edit</button>
+        <button class="danger-btn" onclick="event.stopPropagation();eqDelete('${e.id}')">Delete</button>
+      </div></td>
+    </tr>`
+  ).join('') || '<tr><td colspan="6" class="muted">No equipment found.</td></tr>';
+
+  const calSoon = equipment.filter(e => { const d = daysUntil(e.calDue); return (e.calReq || e.calDue) && d !== null && d <= 90 && d >= 0; }).length;
+  const calOverdue = equipment.filter(e => { const d = daysUntil(e.calDue); return (e.calReq || e.calDue) && d !== null && d < 0; }).length;
+  const maintSoon = equipment.filter(e => { const d = daysUntil(e.maintDue); return d !== null && d <= 30 && d >= 0; }).length;
+  const maintOverdue = equipment.filter(e => { const d = daysUntil(e.maintDue); return d !== null && d < 0; }).length;
+
+  document.getElementById('eqTotal').textContent = equipment.length;
+  document.getElementById('eqCalReq').textContent = equipment.filter(e => e.calReq || e.calDue).length;
+  document.getElementById('eqCalSoon').textContent = calSoon;
+  document.getElementById('eqMaintSoon').textContent = maintSoon;
+
+  const alerts = [];
+  if (calOverdue > 0) alerts.push(`<div class='alert-banner alert-danger'>⚠ ${calOverdue} item(s) with overdue calibration</div>`);
+  if (calSoon > 0) alerts.push(`<div class='alert-banner alert-warn'>⚡ ${calSoon} item(s) with calibration due within 90 days</div>`);
+  if (maintOverdue > 0) alerts.push(`<div class='alert-banner alert-danger'>⚠ ${maintOverdue} item(s) with overdue maintenance</div>`);
+  if (maintSoon > 0) alerts.push(`<div class='alert-banner alert-warn'>⚡ ${maintSoon} item(s) with maintenance due within 30 days</div>`);
+  document.getElementById('eqAlerts').innerHTML = alerts.join('');
+
+  eqRenderLogs();
+}
+
+function eqSelectRow(id) {
+  selectedEqId = id;
+  const e = equipment.find(x => x.id === id);
+  // Highlight selected row
+  document.querySelectorAll('#eqTbody tr').forEach(r => r.style.background = '');
+  const rows = document.querySelectorAll('#eqTbody tr');
+  rows.forEach(r => {
+    if (r.getAttribute('onclick') && r.getAttribute('onclick').includes(id)) {
+      r.style.background = 'rgba(20,184,166,0.1)';
+    }
+  });
+  if (e) {
+    document.getElementById('eqFormTitle').textContent = 'Selected: ' + e.name;
+    document.getElementById('eqLogsHeader').textContent = 'Logs — ' + e.name;
+  }
+  eqRenderLogs();
+}
+
+function eqRenderLogs() {
+  if (!selectedEqId) {
+    document.getElementById('eqLogs').innerHTML = '<div class="muted small">Select a piece of equipment from the table to view its logs.</div>';
+    return;
+  }
+  const items = eqLogs.filter(l => l.equipmentId === selectedEqId).slice(0, 30);
+  const e = equipment.find(x => x.id === selectedEqId);
+  document.getElementById('eqLogs').innerHTML = items.map(l =>
+    `<div class='item'>
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <b>${l.type}</b>
+        <button class="danger-btn" style="padding:3px 7px;font-size:11px" onclick="eqDeleteLog('${l.id}')">Delete</button>
+      </div>
+      <span class='muted small'>${l.initials} &bull; ${new Date(l.at).toLocaleString()}</span>
+      <div style="margin-top:4px">${l.note}</div>
+    </div>`
+  ).join('') || `<div class="muted small">No logs yet for ${e ? e.name : 'this equipment'}.</div>`;
+}
+
+function eqDeleteLog(logId) {
+  if (!confirm('Delete this log entry?')) return;
+  if (eqLogsCol) {
+    eqLogsCol.doc(logId).delete().catch(e => alert('Delete failed: ' + e.message));
+  }
+  eqLogs = eqLogs.filter(l => l.id !== logId);
+  eqSaveStore();
+  eqRenderLogs();
+}
+
+function eqExportCSV() {
+  const rows = [['name','model','serial','manufacturer','location','status','calibration_required','last_calibration','calibration_due','last_maintenance','maintenance_due','notes']].concat(
+    equipment.map(e => [e.name,e.model,e.serial,e.manufacturer,e.location,e.status,e.calReq,e.lastCal,e.calDue,e.lastMaint,e.maintDue,(e.notes||'').replaceAll('\n',' ')])
+  );
+  const csv = rows.map(r => r.map(v => `"${String(v??'').replaceAll('"','""')}"`).join(',')).join('\n');
+  const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([csv],{type:'text/csv'}));
+  a.download = 'labtrack_equipment.csv'; a.click();
+}
+
+function eqGenerateEmail() {
+  const emails = (localStorage.getItem('labtrack_email_list') || '').split(',').map(s => s.trim()).filter(Boolean).join(', ');
+  const calAlerts = equipment.filter(e => { const d = daysUntil(e.calDue); return (e.calReq || e.calDue) && d !== null && (d <= 90); }).map(e => `  - ${e.name}: ${daysUntil(e.calDue) < 0 ? 'OVERDUE by ' + Math.abs(daysUntil(e.calDue)) + 'd' : daysUntil(e.calDue) + 'd remaining'}`).join('\n') || '  None';
+  const maintAlerts = equipment.filter(e => { const d = daysUntil(e.maintDue); return d !== null && d <= 30; }).map(e => `  - ${e.name}: ${daysUntil(e.maintDue) < 0 ? 'OVERDUE by ' + Math.abs(daysUntil(e.maintDue)) + 'd' : daysUntil(e.maintDue) + 'd remaining'}`).join('\n') || '  None';
+  const subject = encodeURIComponent('LabTrack Equipment Alerts');
+  const body = encodeURIComponent(`LabTrack Equipment Alerts\n${'='.repeat(40)}\n\nCALIBRATION ALERTS (90/60/30 day triggers):\n${calAlerts}\n\nMAINTENANCE ALERTS (30/14/7 day triggers):\n${maintAlerts}\n\n---\nGenerated by LabTrack on ${new Date().toLocaleString()}\nUpdate email recipients in Settings > Notification Email List.`);
+  location.href = `mailto:${encodeURIComponent(emails)}?subject=${subject}&body=${body}`;
+}
+
+// ═══════════════════ INIT ═══════════════════
+loadSettings();
+matRender();
+eqRender();
+initFirebase();
+</script>
+</body>
+</html>
